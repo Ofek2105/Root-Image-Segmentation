@@ -1,0 +1,10 @@
+
+train: C:\Users\Ofek\Projects\OferHadar\RootHairSementationModel\dataset\test\images
+val: C:\Users\Ofek\Projects\OferHadar\RootHairSementationModel\dataset\val\images
+test: C:\Users\Ofek\Projects\OferHadar\RootHairSementationModel\dataset\train\images
+
+# Number of classes
+nc: 2
+
+# Class names
+names: ['root', 'hair']
