@@ -2,7 +2,7 @@ import splitfolders
 from ultralytics.data.converter import convert_coco
 
 # convert Json to labels
-convert_coco(labels_dir='JSON/DIR', use_segments=True)
+# convert_coco(labels_dir='json_dir', use_segments=True)
 
 # split into train validation testing
 input_folder = "coco_converted"
