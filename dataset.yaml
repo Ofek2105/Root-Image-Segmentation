@@ -1,10 +1,10 @@
 
-train: C:\Users\ofekno\PycharmProjects\root_images_segmentation\dataset\test\images
-val: C:\Users\ofekno\PycharmProjects\root_images_segmentation\dataset\val\images
-test: C:\Users\ofekno\PycharmProjects\root_images_segmentation\dataset\train\images
+train: C:\Users\Ofek\Projects\OferHadar\RootHairSementationModel\dataset_split\train\images
+val: C:\Users\Ofek\Projects\OferHadar\RootHairSementationModel\dataset_split\val\images
+test: C:\Users\Ofek\Projects\OferHadar\RootHairSementationModel\dataset_split\test\images
 
 # Number of classes
 nc: 2
 
 # Class names
-names: ['root', 'hair']
+names: ['hair', 'root']
