@@ -1,10 +1,13 @@
+import time
+
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.transform import resize
-from matplotlib.colors import ListedColormap
+import os
 
-def plot_segmentation(result):
+
+def plot_segmentation(result, save_path_=None):
     orig_img = resize(result.orig_img, (320, 320))  # Original image
     masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
     class_ids = result.boxes.cls.cpu().numpy()  # Class IDs for each detection
@@ -32,15 +35,30 @@ def plot_segmentation(result):
     axes[1].set_title('Segmented Image')
     axes[1].axis('off')
 
+    if save_path_ is not None:
+        file_name = f"{str(time.time()).split('.')[0]}.jpg"
+        plt.savefig(f'{save_path_}/{file_name}')
     plt.show()
 
-def predict(weight_path, image_path):
+
+def predict_single(weight_path, image_path):
     # Load a pretrained model (recommended for training)
     model = YOLO(weight_path)
     result = model(image_path)[0]  # Access the first result
     plot_segmentation(result)
 
+
+def predict_dir(weight_path, image_dir, save_path_=None):
+
+    model = YOLO(weight_path)
+    for file_name in os.listdir(image_dir):
+        image_path_ = f'{image_dir}/{file_name}'
+        result = model(image_path_)[0]  # Access the first result
+        plot_segmentation(result, save_path_)
+
+
 if __name__ == '__main__':
-    pt_path = r'runs/segment/yolov8m_seg_100epoc/weights/best.pt'
-    image_path = r'rw2_rs0_hl10_ls10_ht3_ts1_hc1_hd0.5_w300_h300_6.png'
-    predict(pt_path, image_path)
+    pt_path = r'runs/segment/yolov8n-seg-200epocs/weights/best.pt'
+    image_path = 'test_images/set1'
+    save_path = 'test_images/set1_pred'
+    predict_dir(pt_path, image_path, save_path)
