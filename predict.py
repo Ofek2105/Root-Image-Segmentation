@@ -6,6 +6,7 @@ from matplotlib.colors import ListedColormap
 import yaml
 import random
 import os
+import re
 
 def plot_segmentation(result):
     # orig_img = result.orig_img
@@ -90,7 +91,7 @@ def get_n_filenames(path_, n, give_txt_ext=True):
         return choice
 def predict(weight_path):
     test_images_path = get_testset_path()
-    test_label_path = test_images_path.replace('images', 'labels')
+    test_label_path =  re.sub('images$', 'labels', test_images_path)
     images_filenames, label_filenames = get_n_filenames(test_images_path, 10, give_txt_ext=True)
     images_path = [os.path.join(test_images_path, image_name) for image_name in images_filenames]
     labels_path = [os.path.join(test_label_path, label_name) for label_name in label_filenames]
@@ -110,6 +111,6 @@ def predict_image(weight_path, image_path):
 if __name__ == '__main__':
     pt_path = r'runs/segment/train7/weights/best.pt'
     # image_path = r'rw7_rs0_hl15_ls10_ht1_ts0_hc0_hd15_w300_h300_15.png'
-    predict_image(pt_path, 'images_to_test/arb_lr_.png')
-    # predict(pt_path)
+    # predict_image(pt_path, 'images_to_test/arb_lr_.png')
+    predict(pt_path)
 
