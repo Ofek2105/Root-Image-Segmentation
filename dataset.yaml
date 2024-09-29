@@ -8,3 +8,4 @@ nc: 2
 
 # Class names
 names: ['hair', 'root']
+weights: [2.0, 1.0]
