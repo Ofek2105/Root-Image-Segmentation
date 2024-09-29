@@ -7,11 +7,12 @@ import yaml
 import random
 import os
 import re
+import time
 
-def plot_segmentation(result):
-    # orig_img = result.orig_img
+
+def plot_segmentation(result, save_=False):
     masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
-    orig_img = resize(result.orig_img, (masks.shape[1], masks.shape[2]))  # Original image
+    orig_img = resize(result.orig_img, (masks.shape[1], masks.shape[2]))  # Resize original image to match masks
     class_ids = result.boxes.cls.cpu().numpy()  # Class IDs for each detection
     class_names = result.names  # Dictionary of class IDs to class names
 
@@ -37,7 +38,10 @@ def plot_segmentation(result):
     axes[1].set_title('Segmented Image')
     axes[1].axis('off')
 
-    plt.show()
+    if save_:
+        plt.savefig(fr"save_dump\{str(time.time()).split('.')[1]}.jpg")
+
+    # plt.show()
 
 
 def plot_many_segmentation_masks(model, image_paths, label_paths):
@@ -51,7 +55,7 @@ def plot_many_segmentation_masks(model, image_paths, label_paths):
     for idx, image_path in enumerate(image_paths):
         true_hair_n = get_n_hair_from_label_path(label_paths[idx])
         result = model(image_path)[0]
-        orig_img = resize(result.orig_img, (320, 320))
+        orig_img = resize(result.orig_img, (960, 960))
         masks = result.masks.data.cpu().numpy()
         class_ids = result.boxes.cls.cpu().numpy()
         class_names = result.names
@@ -89,7 +93,7 @@ def get_n_filenames(path_, n, give_txt_ext=True):
         return choice, choice_txt
     else:
         return choice
-def predict(weight_path):
+def predict_testset(weight_path):
     test_images_path = get_testset_path()
     test_label_path =  re.sub('images$', 'labels', test_images_path)
     images_filenames, label_filenames = get_n_filenames(test_images_path, 10, give_txt_ext=True)
@@ -107,10 +111,24 @@ def predict_image(weight_path, image_path):
     result = model(image_path)[0]  # Access the first result
     plot_segmentation(result)
 
+def predict_folder(weight_path, folder_path, save_=False):
+
+    files = os.listdir(folder_path)
+    model = YOLO(weight_path)
+    for file in files:
+        path = os.path.join(folder_path, file)
+        result = model(path)[0]  # Access the first result
+        plot_segmentation(result, save_)
+
 
 if __name__ == '__main__':
-    pt_path = r'runs/segment/train7/weights/best.pt'
-    # image_path = r'rw7_rs0_hl15_ls10_ht1_ts0_hc0_hd15_w300_h300_15.png'
+    # pt_path = r'runs/segment/train3/weights/best.pt'
+    pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
+
+    # predict_testset(pt_path)
+    # predict_image(pt_path, 'images_to_test/GFPdrought_im004_13052023_1.png.png')
+    # predict_image(pt_path, 'images_to_test/GFPdrought_im019_04052023.png')
+    # predict_image(pt_path, 'images_to_test/bell_lr_.png')
     # predict_image(pt_path, 'images_to_test/arb_lr_.png')
-    predict(pt_path)
+    predict_folder(pt_path, 'images_to_test', save_=True)
 
