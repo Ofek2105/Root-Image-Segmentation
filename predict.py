@@ -8,6 +8,9 @@ import random
 import os
 import re
 import time
+from functools import lru_cache
+from Image2Units import Image2Units
+import csv
 
 
 def plot_segmentation(result, save_=False):
@@ -40,8 +43,8 @@ def plot_segmentation(result, save_=False):
 
     if save_:
         plt.savefig(fr"save_dump\{str(time.time()).split('.')[1]}.jpg")
-
-    # plt.show()
+    else:
+        plt.show()
 
 
 def plot_many_segmentation_masks(model, image_paths, label_paths):
@@ -109,26 +112,88 @@ def predict_image(weight_path, image_path):
 
     model = YOLO(weight_path)
     result = model(image_path)[0]  # Access the first result
+    prop = get_seg_properties(result)
+    print(prop)
     plot_segmentation(result)
 
-def predict_folder(weight_path, folder_path, save_=False):
 
+def predict_folder(weight_path, folder_path, save_image=False, save_csv=False):
     files = os.listdir(folder_path)
     model = YOLO(weight_path)
-    for file in files:
+
+    csv_rows = []
+
+    for idx, file in enumerate(files):
         path = os.path.join(folder_path, file)
-        result = model(path)[0]  # Access the first result
-        plot_segmentation(result, save_)
+        result = model(path)[0]
+
+        if file == "GFPdrought_im002_10052023_2.png":
+            print("check")
+
+        if save_csv:
+            prop = get_seg_properties(result)
+            csv_rows.append({
+                'idx': idx + 1,
+                'label': file,
+                **prop
+            })
+        else:
+            plot_segmentation(result, save_image)
+
+    if save_csv:
+        csv_path = os.path.join(folder_path, 'results.csv')
+        with open(csv_path, mode='w', newline='') as file:
+            fieldnames = ['idx', 'label', 'avg_root_area', 'avg_root_length', 'avg_hair_area', 'avg_hair_length',
+                          'sum_root_length', 'sum_hair_length']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(csv_rows)
+
+
+
+def get_seg_properties(result):
+    masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
+    class_ids = result.boxes.cls.cpu().numpy()  # Class IDs for each detection
+
+    hair_area_list = []
+    root_area_list = []
+
+    hairs_length_list = []
+    root_length_list = []
+
+
+    for mask_idx, class_id in enumerate(class_ids):
+        mask = masks[int(mask_idx)]
+        im_unit_gen = Image2Units(mask.shape)
+
+        if class_id == 0:
+            hair_area_list.append(im_unit_gen.get_mask_area_in_mm2(mask))
+            hairs_length_list.append(im_unit_gen.get_mask_length_in_mm(mask))
+        elif class_id == 1:
+            root_area_list.append(im_unit_gen.get_mask_area_in_mm2(mask))
+            root_length_list.append(im_unit_gen.get_mask_length_in_mm(mask))
+
+    properties = {
+        'avg_root_area': np.mean(root_area_list) if len(root_area_list) > 0 else 0,
+        'avg_hair_area': np.mean(hair_area_list) if len(hair_area_list) > 0 else 0,
+        'avg_hair_length': np.mean(hairs_length_list) if len(hairs_length_list) > 0 else 0,
+        'avg_root_length': np.mean(root_length_list) if len(root_length_list) > 0 else 0,
+        'sum_root_length': np.sum(root_length_list) if len(root_length_list) > 0 else 0,
+        'sum_hair_length' : np.sum(hairs_length_list) if len(hairs_length_list) > 0 else 0,
+    }
+    return properties
 
 
 if __name__ == '__main__':
     # pt_path = r'runs/segment/train3/weights/best.pt'
     pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
+    # pt_path = r'runs/segment/train5/weights/best.pt'
 
     # predict_testset(pt_path)
-    # predict_image(pt_path, 'images_to_test/GFPdrought_im004_13052023_1.png.png')
+    # predict_image(pt_path, 'images_to_test/GFPdrought_im002_10052023_2.png')
+    # predict_image(pt_path, r'C:\Users\Ofek\Desktop\WhatsApp Image 2024-10-02 at 10.36.34.jpeg')
     # predict_image(pt_path, 'images_to_test/GFPdrought_im019_04052023.png')
     # predict_image(pt_path, 'images_to_test/bell_lr_.png')
     # predict_image(pt_path, 'images_to_test/arb_lr_.png')
-    predict_folder(pt_path, 'images_to_test', save_=True)
+    predict_folder(pt_path, 'images_to_test', save_csv=False, save_image=True)
 
