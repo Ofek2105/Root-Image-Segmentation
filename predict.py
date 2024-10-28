@@ -14,6 +14,8 @@ import csv
 
 
 def plot_segmentation(result, save_=False):
+    if len(result) == 0:
+        return None
     masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
     orig_img = resize(result.orig_img, (masks.shape[1], masks.shape[2]))  # Resize original image to match masks
     class_ids = result.boxes.cls.cpu().numpy()  # Class IDs for each detection
@@ -58,7 +60,8 @@ def plot_many_segmentation_masks(model, image_paths, label_paths):
     for idx, image_path in enumerate(image_paths):
         true_hair_n = get_n_hair_from_label_path(label_paths[idx])
         result = model(image_path)[0]
-        orig_img = resize(result.orig_img, (960, 960))
+        output_size = tuple(result.masks.shape[1:])
+        orig_img = resize(result.orig_img, output_size)
         masks = result.masks.data.cpu().numpy()
         class_ids = result.boxes.cls.cpu().numpy()
         class_names = result.names
@@ -123,37 +126,37 @@ def predict_folder(weight_path, folder_path, save_image=False, save_csv=False):
 
     csv_rows = []
 
-    for idx, file in enumerate(files):
-        path = os.path.join(folder_path, file)
-        result = model(path)[0]
+    for idx, file_name in enumerate(files):
 
-        if file == "GFPdrought_im002_10052023_2.png":
-            print("check")
+        if not file_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+            continue
+
+        path = os.path.join(folder_path, file_name)
+
+        result = model(path)[0]
 
         if save_csv:
             prop = get_seg_properties(result)
             csv_rows.append({
                 'idx': idx + 1,
-                'label': file,
+                'label': file_name,
                 **prop
             })
-        else:
-            plot_segmentation(result, save_image)
+
+        plot_segmentation(result, save_image)
 
     if save_csv:
-        csv_path = os.path.join(folder_path, 'results.csv')
-        with open(csv_path, mode='w', newline='') as file:
+        csv_path = os.path.join('save_dump', 'results.csv')
+        with open(csv_path, mode='w', newline='') as file_name:
             fieldnames = ['idx', 'label', 'avg_root_area', 'avg_root_length', 'avg_hair_area', 'avg_hair_length',
                           'sum_root_length', 'sum_hair_length']
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer = csv.DictWriter(file_name, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(csv_rows)
 
 
 
 def get_seg_properties(result):
-    masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
-    class_ids = result.boxes.cls.cpu().numpy()  # Class IDs for each detection
 
     hair_area_list = []
     root_area_list = []
@@ -161,17 +164,20 @@ def get_seg_properties(result):
     hairs_length_list = []
     root_length_list = []
 
+    if len(result) != 0:
+        masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
+        class_ids = result.boxes.cls.cpu().numpy()  # Class IDs for each detection
 
-    for mask_idx, class_id in enumerate(class_ids):
-        mask = masks[int(mask_idx)]
-        im_unit_gen = Image2Units(mask.shape)
+        for mask_idx, class_id in enumerate(class_ids):
+            mask = masks[int(mask_idx)]
+            im_unit_gen = Image2Units(mask.shape)
 
-        if class_id == 0:
-            hair_area_list.append(im_unit_gen.get_mask_area_in_mm2(mask))
-            hairs_length_list.append(im_unit_gen.get_mask_length_in_mm(mask))
-        elif class_id == 1:
-            root_area_list.append(im_unit_gen.get_mask_area_in_mm2(mask))
-            root_length_list.append(im_unit_gen.get_mask_length_in_mm(mask))
+            if class_id == 0:
+                hair_area_list.append(im_unit_gen.get_mask_area_in_mm2(mask))
+                hairs_length_list.append(im_unit_gen.get_mask_length_in_mm(mask))
+            elif class_id == 1:
+                root_area_list.append(im_unit_gen.get_mask_area_in_mm2(mask))
+                root_length_list.append(im_unit_gen.get_mask_length_in_mm(mask))
 
     properties = {
         'avg_root_area': np.mean(root_area_list) if len(root_area_list) > 0 else 0,
@@ -186,8 +192,9 @@ def get_seg_properties(result):
 
 if __name__ == '__main__':
     # pt_path = r'runs/segment/train3/weights/best.pt'
-    pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
+    # pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
     # pt_path = r'runs/segment/train5/weights/best.pt'
+    pt_path = r'runs/best_improved_dataset_FIX_yolo11x_1024_1_epoc.pt'
 
     # predict_testset(pt_path)
     # predict_image(pt_path, 'images_to_test/GFPdrought_im002_10052023_2.png')
@@ -195,5 +202,5 @@ if __name__ == '__main__':
     # predict_image(pt_path, 'images_to_test/GFPdrought_im019_04052023.png')
     # predict_image(pt_path, 'images_to_test/bell_lr_.png')
     # predict_image(pt_path, 'images_to_test/arb_lr_.png')
-    predict_folder(pt_path, 'images_to_test', save_csv=False, save_image=True)
+    predict_folder(pt_path, 'images_to_test', save_csv=True, save_image=True)
 
