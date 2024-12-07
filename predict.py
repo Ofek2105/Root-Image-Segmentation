@@ -18,6 +18,7 @@ def plot_segmentation(result, save_=False):
         return None
     masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
     orig_img = resize(result.orig_img, (masks.shape[1], masks.shape[2]))  # Resize original image to match masks
+    orig_img = orig_img[:, :, [2, 1, 0]] # here to change BGR with RGB (cv2 to pyplot)
     class_ids = result.boxes.cls.cpu().numpy()  # Class IDs for each detection
     class_names = result.names  # Dictionary of class IDs to class names
 
@@ -194,7 +195,7 @@ if __name__ == '__main__':
     # pt_path = r'runs/segment/train3/weights/best.pt'
     # pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
     # pt_path = r'runs/segment/train5/weights/best.pt'
-    pt_path = r'runs/best_improved_dataset_FIX_yolo11x_1024_1_epoc.pt'
+    pt_path = r'runs/best_dataset_yolo11x_1024_39_epoc.pt'
 
     # predict_testset(pt_path)
     # predict_image(pt_path, 'images_to_test/GFPdrought_im002_10052023_2.png')
