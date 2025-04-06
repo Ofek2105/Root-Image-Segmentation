@@ -1,3 +1,4 @@
+import cv2
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,9 +12,10 @@ import time
 from functools import lru_cache
 from Image2Units import Image2Units
 import csv
+from sklearn.metrics import jaccard_score, precision_score, recall_score, f1_score
 
 
-def plot_segmentation(result, save_=False):
+def plot_segmentation(result, save_path=None):
     if len(result) == 0:
         return None
     masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
@@ -44,8 +46,8 @@ def plot_segmentation(result, save_=False):
     axes[1].set_title('Segmented Image')
     axes[1].axis('off')
 
-    if save_:
-        plt.savefig(fr"save_dump\{str(time.time()).split('.')[1]}.jpg")
+    if save_path is not None:
+        plt.savefig(save_path)
     else:
         plt.show()
 
@@ -144,13 +146,14 @@ def predict_folder(weight_path, folder_path, save_image=False, save_csv=False):
                 **prop
             })
 
-        plot_segmentation(result, save_image)
+        plot_segmentation(result, f'save_dump/{file_name}')
 
     if save_csv:
         csv_path = os.path.join('save_dump', 'results.csv')
         with open(csv_path, mode='w', newline='') as file_name:
-            fieldnames = ['idx', 'label', 'avg_root_area', 'avg_root_length', 'avg_hair_area', 'avg_hair_length',
-                          'sum_root_length', 'sum_hair_length']
+            fieldnames = csv_rows[0].keys()
+            # fieldnames = ['idx', 'label', 'hair_count',  'avg_root_area', 'avg_root_length', 'avg_hair_area', 'avg_hair_length',
+            #               'sum_root_length', 'sum_hair_length']
             writer = csv.DictWriter(file_name, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(csv_rows)
@@ -181,21 +184,100 @@ def get_seg_properties(result):
                 root_length_list.append(im_unit_gen.get_mask_length_in_mm(mask))
 
     properties = {
+        'hair_count': len(hair_area_list),
+        'root_count': len(root_area_list),
         'avg_root_area': np.mean(root_area_list) if len(root_area_list) > 0 else 0,
         'avg_hair_area': np.mean(hair_area_list) if len(hair_area_list) > 0 else 0,
         'avg_hair_length': np.mean(hairs_length_list) if len(hairs_length_list) > 0 else 0,
         'avg_root_length': np.mean(root_length_list) if len(root_length_list) > 0 else 0,
         'sum_root_length': np.sum(root_length_list) if len(root_length_list) > 0 else 0,
-        'sum_hair_length' : np.sum(hairs_length_list) if len(hairs_length_list) > 0 else 0,
+        'sum_hair_length': np.sum(hairs_length_list) if len(hairs_length_list) > 0 else 0,
     }
     return properties
+
+
+def validation(pt_path, yolo_images_folder_path="human_annotated\\root-hairs.v2i.yolov12"):
+    images_path = os.path.join(yolo_images_folder_path, 'images')
+    labels_path = os.path.join(yolo_images_folder_path, 'labels')
+
+    images_files = os.listdir(images_path)
+    labels_files = os.listdir(labels_path)
+
+    model = YOLO(pt_path)
+
+    iou_scores = []
+    dice_scores = []
+    precision_scores = []
+    recall_scores = []
+    pixel_accuracies = []
+    f2_scores = []
+
+    for image_file in images_files:
+        image_path = os.path.join(images_path, image_file)
+        label_file = image_file.replace('.jpg', '.txt')
+
+        if label_file not in labels_files:
+            continue
+
+        label_path = os.path.join(labels_path, label_file)
+        results = model(image_path, verbose=False)[0]
+        model_mask = np.zeros((results.orig_shape[0], results.orig_shape[1]))
+
+        if results.masks is None:
+            continue
+
+        for segment in results.masks.xy:
+            if segment.shape[0] == 0:
+                continue
+            segment = np.array(segment, dtype=np.int32)
+            cv2.fillPoly(model_mask, [segment], 1)
+
+        label_mask = np.zeros_like(model_mask)
+
+        with open(label_path, 'r') as file:
+            lines = file.readlines()
+
+        for line in lines:
+            label_data = list(map(float, line.strip().split(' ')))
+            points = np.array(label_data[1:]).reshape(-1, 2)
+            points[:, 0] *= model_mask.shape[1]
+            points[:, 1] *= model_mask.shape[0]
+            points = points.astype(int)
+
+            cv2.fillPoly(label_mask, [points], 1)
+
+        y_true = label_mask.flatten()
+        y_pred = model_mask.flatten()
+
+        if np.sum(y_true) == 0 and np.sum(y_pred) == 0:
+            continue
+
+        iou_scores.append(jaccard_score(y_true, y_pred))
+        dice_scores.append(f1_score(y_true, y_pred))
+        precision_scores.append(precision_score(y_true, y_pred))
+        recall_scores.append(recall_score(y_true, y_pred))
+        pixel_accuracies.append(np.sum(y_true == y_pred) / len(y_true))
+        f2_scores.append(f1_score(y_true, y_pred))
+
+    if iou_scores:
+        print(f"Average IoU Score: {np.mean(iou_scores)}")
+        print(f"Average Dice Score (F1): {np.mean(dice_scores)}")
+        print(f"Average Precision: {np.mean(precision_scores)}")
+        print(f"Average Recall: {np.mean(recall_scores)}")
+        print(f"Average Pixel Accuracy: {np.mean(pixel_accuracies)}")
+        print(f"Average F2 Score: {np.mean(f2_scores)}")
+        print("\n")
+    else:
+        print("No valid predictions were made.")
+
+
 
 
 if __name__ == '__main__':
     # pt_path = r'runs/segment/train3/weights/best.pt'
     # pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
     # pt_path = r'runs/segment/train5/weights/best.pt'
-    pt_path = r'runs/best_dataset_yolo11x_1024_39_epoc.pt'
+    pt_path = r'runs/dio_dataset.pt'
 
     # predict_testset(pt_path)
     # predict_image(pt_path, 'images_to_test/GFPdrought_im002_10052023_2.png')
@@ -203,5 +285,8 @@ if __name__ == '__main__':
     # predict_image(pt_path, 'images_to_test/GFPdrought_im019_04052023.png')
     # predict_image(pt_path, 'images_to_test/bell_lr_.png')
     # predict_image(pt_path, 'images_to_test/arb_lr_.png')
-    predict_folder(pt_path, 'images_to_test', save_csv=True, save_image=True)
+    # predict_folder(pt_path, 'images_to_test', save_csv=True, save_image=True)
 
+    validation(r'runs/dio_dataset.pt')
+    validation(r'runs/best_BOTH_DATASETS_yolo11m_1024_70_epoc.pt')
+    validation(r'runs/best_improved_dataset_yolo11x_1024_8_epoc.pt')
