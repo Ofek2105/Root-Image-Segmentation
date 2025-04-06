@@ -1,4 +1,6 @@
+import splitfolders
 from ultralytics import YOLO
+
 
 def main():
     # Load a pretrained model (recommended for training) 'yolov8m-seg.pt'
@@ -12,6 +14,8 @@ def main():
     )
 
 if __name__ == '__main__':
+    splitfolders.ratio("your_dataset", output="output_dataset", seed=1337, ratio=(.7, .2, .1), group_prefix=True)
+
     main()
     """
     changes this run: 
