@@ -1,0 +1,9 @@
+__pycache__/
+**/__pycache__/
+.idea/
+runs/
+save_dump/
+yolo_models/
+dataset.yaml
+images_to_test/
+human_annotated/
