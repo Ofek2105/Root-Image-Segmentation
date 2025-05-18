@@ -8,11 +8,11 @@ import yaml
 import random
 import os
 import re
-import time
-from functools import lru_cache
+import pandas as pd
 from Image2Units import Image2Units
 import csv
 from sklearn.metrics import jaccard_score, precision_score, recall_score, f1_score
+from tqdm import tqdm
 
 
 def plot_segmentation(result, save_path=None):
@@ -196,7 +196,7 @@ def get_seg_properties(result):
     return properties
 
 
-def validation(pt_path, yolo_images_folder_path="human_annotated\\root-hairs.v2i.yolov12"):
+def validation(pt_path, yolo_images_folder_path="human_annotated\\root-hairs.v2i.yolov12", print_metrics_=False):
     images_path = os.path.join(yolo_images_folder_path, 'images')
     labels_path = os.path.join(yolo_images_folder_path, 'labels')
 
@@ -259,25 +259,26 @@ def validation(pt_path, yolo_images_folder_path="human_annotated\\root-hairs.v2i
         pixel_accuracies.append(np.sum(y_true == y_pred) / len(y_true))
         f2_scores.append(f1_score(y_true, y_pred))
 
-    if iou_scores:
-        print(f"Average IoU Score: {np.mean(iou_scores)}")
-        print(f"Average Dice Score (F1): {np.mean(dice_scores)}")
-        print(f"Average Precision: {np.mean(precision_scores)}")
-        print(f"Average Recall: {np.mean(recall_scores)}")
-        print(f"Average Pixel Accuracy: {np.mean(pixel_accuracies)}")
-        print(f"Average F2 Score: {np.mean(f2_scores)}")
-        print("\n")
-    else:
-        print("No valid predictions were made.")
+    metrics = {
+        "Average IoU Score": np.mean(iou_scores),
+        "Average Dice Score (F1)": np.mean(dice_scores),
+        "Average Precision": np.mean(precision_scores),
+        "Average Recall": np.mean(recall_scores),
+        "Average Pixel Accuracy": np.mean(pixel_accuracies),
+        "Average F2 Score": np.mean(f2_scores),
+    }
 
+    if print_metrics_:
+        print(metrics)
 
+    return metrics
 
 
 if __name__ == '__main__':
     # pt_path = r'runs/segment/train3/weights/best.pt'
     # pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
     # pt_path = r'runs/segment/train5/weights/best.pt'
-    pt_path = r'runs/dio_dataset.pt'
+    # pt_path = r'runs/dio_dataset.pt'
 
     # predict_testset(pt_path)
     # predict_image(pt_path, 'images_to_test/GFPdrought_im002_10052023_2.png')
@@ -287,6 +288,9 @@ if __name__ == '__main__':
     # predict_image(pt_path, 'images_to_test/arb_lr_.png')
     # predict_folder(pt_path, 'images_to_test', save_csv=True, save_image=True)
 
-    validation(r'runs/dio_dataset.pt')
-    validation(r'runs/best_BOTH_DATASETS_yolo11m_1024_70_epoc.pt')
-    validation(r'runs/best_improved_dataset_yolo11x_1024_8_epoc.pt')
+    # validation(r'runs/dio_dataset.pt')
+    # validation(r'runs/best_BOTH_DATASETS_yolo11m_1024_70_epoc.pt')
+    # validation(r'runs/best_improved_dataset_yolo11x_1024_8_epoc.pt')
+
+    # multiple_datasets_evaluation()
+    pass
