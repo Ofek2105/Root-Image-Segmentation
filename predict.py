@@ -123,7 +123,7 @@ def predict_image(weight_path, image_path):
     plot_segmentation(result)
 
 
-def predict_folder(weight_path, folder_path, save_image=False, save_csv=False):
+def predict_folder(weight_path, folder_path, image_save_path='None', csv_save_path='save_dump'):
     files = os.listdir(folder_path)
     model = YOLO(weight_path)
 
@@ -136,19 +136,20 @@ def predict_folder(weight_path, folder_path, save_image=False, save_csv=False):
 
         path = os.path.join(folder_path, file_name)
 
-        result = model(path)[0]
+        seg_image_result = model(path)[0]
 
-        if save_csv:
-            prop = get_seg_properties(result)
+        if csv_save_path:
+            prop = get_seg_properties(seg_image_result)
             csv_rows.append({
                 'idx': idx + 1,
                 'label': file_name,
                 **prop
             })
+        if image_save_path:
+            save_path = os.path.join(image_save_path, file_name)
+            plot_segmentation(seg_image_result, save_path)
 
-        plot_segmentation(result, f'save_dump/{file_name}')
-
-    if save_csv:
+    if csv_save_path:
         csv_path = os.path.join('save_dump', 'results.csv')
         with open(csv_path, mode='w', newline='') as file_name:
             fieldnames = csv_rows[0].keys()
@@ -278,7 +279,7 @@ if __name__ == '__main__':
     # pt_path = r'runs/segment/train3/weights/best.pt'
     # pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
     # pt_path = r'runs/segment/train5/weights/best.pt'
-    # pt_path = r'runs/dio_dataset.pt'
+    pt_path = r'runs/dio_dataset.pt'
 
     # predict_testset(pt_path)
     # predict_image(pt_path, 'images_to_test/GFPdrought_im002_10052023_2.png')
@@ -286,7 +287,7 @@ if __name__ == '__main__':
     # predict_image(pt_path, 'images_to_test/GFPdrought_im019_04052023.png')
     # predict_image(pt_path, 'images_to_test/bell_lr_.png')
     # predict_image(pt_path, 'images_to_test/arb_lr_.png')
-    # predict_folder(pt_path, 'images_to_test', save_csv=True, save_image=True)
+    predict_folder(pt_path, 'images_to_test', save_csv=True, save_image=True)
 
     # validation(r'runs/dio_dataset.pt')
     # validation(r'runs/best_BOTH_DATASETS_yolo11m_1024_70_epoc.pt')
