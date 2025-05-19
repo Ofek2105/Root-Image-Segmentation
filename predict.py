@@ -150,7 +150,7 @@ def predict_folder(weight_path, folder_path, image_save_path='None', csv_save_pa
             plot_segmentation(seg_image_result, save_path)
 
     if csv_save_path:
-        csv_path = os.path.join('save_dump', 'results.csv')
+        csv_path = os.path.join(csv_save_path, 'results.csv')
         with open(csv_path, mode='w', newline='') as file_name:
             fieldnames = csv_rows[0].keys()
             # fieldnames = ['idx', 'label', 'hair_count',  'avg_root_area', 'avg_root_length', 'avg_hair_area', 'avg_hair_length',
@@ -287,7 +287,10 @@ if __name__ == '__main__':
     # predict_image(pt_path, 'images_to_test/GFPdrought_im019_04052023.png')
     # predict_image(pt_path, 'images_to_test/bell_lr_.png')
     # predict_image(pt_path, 'images_to_test/arb_lr_.png')
-    predict_folder(pt_path, 'images_to_test', save_csv=True, save_image=True)
+    predict_folder(pt_path,
+                   folder_path='images_to_test/d2_sr_input',
+                   image_save_path=r'save_dump/misr/input1',
+                   csv_save_path=r'save_dump/misr/input1')
 
     # validation(r'runs/dio_dataset.pt')
     # validation(r'runs/best_BOTH_DATASETS_yolo11m_1024_70_epoc.pt')
