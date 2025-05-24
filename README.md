@@ -7,6 +7,13 @@ This repository contains the code and resources for the paper: **TBD**.
 **[Link to the Published Paper (Will be added upon full publication)]**
 
 
+## Segmentation Results
+
+![](README_images/GFPdrought_im002_10052023.png)
+![](README_images/GFPdrought_im006_13052023_1.png)
+![](README_images/GFPdrought_im005_07052023_2.png)
+
+
 ## Overview
 
 This Project Trains a Yolo-Segmentation model on the Synthetic Root-Hair images
@@ -15,10 +22,5 @@ presented in the following gitHub repository: [Synthetic-Root-Hair-Image-Generat
 
 Additionally, In 'predict.py' file, I provide  a report generation script. using the predict_folder function
 
-## Segmentation Results
-
-![](README_images/GFPdrought_im002_10052023.png)
-![](README_images/GFPdrought_im006_13052023_1.png)
-![](README_images/GFPdrought_im005_07052023_2.png)
 
 
