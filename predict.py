@@ -15,7 +15,14 @@ from sklearn.metrics import jaccard_score, precision_score, recall_score, f1_sco
 from tqdm import tqdm
 
 
-def plot_segmentation(result, save_path=None):
+def plot_segmentation(result, save_path=None, plot_mode="compare"):
+    """
+
+    :param result:
+    :param save_path:
+    :param plot_mode: compare/raw
+    :return:
+    """
     if len(result) == 0:
         return None
     masks = result.masks.data.cpu().numpy()  # Extract masks data and convert to numpy array
@@ -34,22 +41,31 @@ def plot_segmentation(result, save_path=None):
         color = colors[int(class_id)].astype(np.uint8)  # Use only RGB values
         colored_mask[mask == 1] = color
 
-    # Plot original image and segmentation result side by side
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    if plot_mode == "compare":
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        axes[0].imshow(orig_img)
+        axes[0].set_title('Original Image')
+        axes[0].axis('off')
+        axes[1].imshow(orig_img)
+        axes[1].imshow(colored_mask, alpha=0.5)  # Overlay the colored mask with some transparency
+        axes[1].set_title('Segmented Image')
+        axes[1].axis('off')
 
-    axes[0].imshow(orig_img)
-    axes[0].set_title('Original Image')
-    axes[0].axis('off')
+        if save_path is not None:
+            plt.savefig(save_path)
+        else:
+            plt.show()
 
-    axes[1].imshow(orig_img)
-    axes[1].imshow(colored_mask, alpha=0.5)  # Overlay the colored mask with some transparency
-    axes[1].set_title('Segmented Image')
-    axes[1].axis('off')
+    if plot_mode == "raw":
+        plt.imshow(orig_img)
+        plt.imshow(colored_mask, alpha=0.5)  # Overlay the colored mask with some transparency
+        plt.title('Segmented Image')
+        plt.axis('off')
 
-    if save_path is not None:
-        plt.savefig(save_path)
-    else:
-        plt.show()
+        if save_path is not None:
+            plt.imshow(save_path)
+        else:
+            plt.show()
 
 
 def plot_many_segmentation_masks(model, image_paths, label_paths):
@@ -123,7 +139,7 @@ def predict_image(weight_path, image_path):
     plot_segmentation(result)
 
 
-def predict_folder(weight_path, folder_path, image_save_path='None', csv_save_path='save_dump'):
+def predict_folder(weight_path, folder_path, image_save_path='None', csv_save_path='save_dump', plot_mode_="compare"):
     files = os.listdir(folder_path)
     model = YOLO(weight_path)
 
@@ -147,7 +163,7 @@ def predict_folder(weight_path, folder_path, image_save_path='None', csv_save_pa
             })
         if image_save_path:
             save_path = os.path.join(image_save_path, file_name)
-            plot_segmentation(seg_image_result, save_path)
+            plot_segmentation(seg_image_result, save_path, plot_mode=plot_mode_)
 
     if csv_save_path:
         csv_path = os.path.join(csv_save_path, 'results.csv')
@@ -280,6 +296,7 @@ if __name__ == '__main__':
     # pt_path = r'runs/segment/train15-color-bigdb-imgz960/weights/best.pt'
     # pt_path = r'runs/segment/train5/weights/best.pt'
     pt_path = r'runs/dio_dataset.pt'
+    pt_path = r'C:\Users\Ofek\Projects\OferHadar\RootHairSementationModel\runs\performance_datasets_70_epocs\dataset_baseline\weights\best.pt'
 
     # predict_testset(pt_path)
     # predict_image(pt_path, 'images_to_test/GFPdrought_im002_10052023_2.png')
@@ -287,10 +304,18 @@ if __name__ == '__main__':
     # predict_image(pt_path, 'images_to_test/GFPdrought_im019_04052023.png')
     # predict_image(pt_path, 'images_to_test/bell_lr_.png')
     # predict_image(pt_path, 'images_to_test/arb_lr_.png')
+
     predict_folder(pt_path,
-                   folder_path='images_to_test/d2_sr_input',
-                   image_save_path=r'save_dump/misr/input1',
-                   csv_save_path=r'save_dump/misr/input1')
+                   folder_path='images_to_test/two images',
+                   image_save_path=r'save_dump/two images_out',
+                   csv_save_path=None,
+                   plot_mode_="raw")
+
+    # predict_folder(pt_path,
+    #                folder_path='images_to_test/d2_sr_output',
+    #                image_save_path=r'save_dump/misr/output1_baseline',
+    #                csv_save_path=r'save_dump/misr/output1_baseline')
+
 
     # validation(r'runs/dio_dataset.pt')
     # validation(r'runs/best_BOTH_DATASETS_yolo11m_1024_70_epoc.pt')
