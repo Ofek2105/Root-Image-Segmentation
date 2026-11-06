@@ -2,9 +2,7 @@
 
 ![Python Version](https://img.shields.io/badge/python-3.x-blue.svg)
 
-This repository contains the code and resources for the paper: **TBD**.
-
-[https://doi.org/10.1109/TAFE.2025.3636384](https://doi.org/10.1109/TAFE.2025.3636384)
+This repository contains the code and resources for the paper: [https://doi.org/10.1109/TAFE.2025.3636384](https://doi.org/10.1109/TAFE.2025.3636384)
 
 
 ## Segmentation Results
