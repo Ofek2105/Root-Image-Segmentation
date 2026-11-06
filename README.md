@@ -4,7 +4,7 @@
 
 This repository contains the code and resources for the paper: **TBD**.
 
-**[Link to the Published Paper (Will be added upon full publication)]**
+[https://doi.org/10.1109/TAFE.2025.3636384](https://doi.org/10.1109/TAFE.2025.3636384)
 
 
 ## Segmentation Results
